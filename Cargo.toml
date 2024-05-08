@@ -7,6 +7,11 @@ keywords = ["blas", "tensor", "machine-learning"]
 categories = ["science"]
 license = "MIT OR Apache-2.0"
 
+[features]
+lua54 = ["mlua/lua54"]
+lua53 = ["mlua/lua53"]
+lua52 = ["mlua/lua52"]
+lua51 = ["mlua/lua51"]
 
 [lib]
 name = "transformers_ao"
@@ -52,7 +57,11 @@ imageproc = { version = "0.24.0", default-features = false }
 [dependencies.mlua]
 version = "0.9.7"
 default-features = false
-features = ["lua53", "module", "serialize"]
+features = [
+#    "lua53",
+    "module",
+    "serialize"
+]
 
 [dependencies.onig]
 version = "6.1.0"
