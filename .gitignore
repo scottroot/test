@@ -1,2 +1,5 @@
 src/models
 /target/*
+/target/
+/target/debug/
+/target/release/
