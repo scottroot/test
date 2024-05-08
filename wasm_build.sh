@@ -1,0 +1,1 @@
+cargo build --target wasm32-unknown-emscripten --target-dir ./target --release

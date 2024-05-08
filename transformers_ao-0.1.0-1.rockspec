@@ -2,7 +2,7 @@ package = "lua-aobert"
 version = "0.1.0-1"
 
 source = {
-    url = "file:///src/bert-wasm-example-mlua-simple/"
+    url = "https://github.com/scottroot/test.git"
 }
 
 description = {
