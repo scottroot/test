@@ -12,10 +12,10 @@ stop:
 .PHONY: clean
 clean:
 	-rm ./target/release/liblua_transformers_ao.so;
-	-rm ./build/liblua_transformers_ao.so;
+	-rm ./output/liblua_transformers_ao.so;
 
 .PHONY: build
 build: clean
 	cargo build --release;
-	cp ./target/release/libtransformers_ao.so ./build/libtransformers_ao.so;
-	cd build && lua mymodule.lua;
+	cp ./target/release/libtransformers_ao.so ./output/libtransformers_ao.so;
+	cd output && lua mymodule.lua;

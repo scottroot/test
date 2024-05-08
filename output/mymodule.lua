@@ -1,5 +1,5 @@
-package.cpath = package.cpath .. ";/src/build/lib?.so"
-package.path = package.path .. ";/src/build/?.lua"
+--package.cpath = package.cpath .. ";/src/build/lib?.so"
+--package.path = package.path .. ";/src/build/?.lua"
 
 local bert = require("transformers_ao")
 

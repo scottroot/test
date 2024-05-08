@@ -1,4 +1,4 @@
-package = "transformers_ao"
+package = "transformers-ao"
 version = "0.1.0-1"
 
 source = {
@@ -20,6 +20,11 @@ dependencies = {
 
 build = {
     type = "rust-mlua",
+    -- install = {
+    --     lua = {
+    --         transformers_ao = "build/mymodule.lua"
+    --     }
+    -- },
     modules = {
         "transformers_ao"
     },

@@ -1,17 +1,17 @@
 [package]
 name = "transformers-ao"
-version = "0.5.0"
+version = "0.1.0"
 edition = "2021"
 description = "transformers_ao."
-keywords = ["blas", "tensor", "machine-learning"]
+keywords = ["ao", "tensor", "machine-learning"]
 categories = ["science"]
-license = "MIT OR Apache-2.0"
+license = "MIT"
 
 [features]
-lua54 = ["mlua/lua54"]
+#lua54 = ["mlua/lua54"]
 lua53 = ["mlua/lua53"]
-lua52 = ["mlua/lua52"]
-lua51 = ["mlua/lua51"]
+#lua52 = ["mlua/lua52"]
+#lua51 = ["mlua/lua51"]
 
 [lib]
 name = "transformers_ao"

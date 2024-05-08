@@ -2,7 +2,8 @@ FROM emscripten/emsdk:latest
 LABEL description="emscripten builder for rust lua"
 
 ENV LUA_VERSION 5.3.4
-ENV LUAROCKS_VERSION 2.4.4
+ENV LUAROCKS_VERSION 3.11.0
+#2.4.4
 
 WORKDIR /src
 
