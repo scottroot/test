@@ -20,11 +20,6 @@ dependencies = {
 
 build = {
     type = "rust-mlua",
-    install = {
-        lua = {
-            transformers_ao = "build/mymodule.lua"
-        }
-    },
     modules = {
         "transformers_ao"
     },
