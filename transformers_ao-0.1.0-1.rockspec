@@ -14,12 +14,17 @@ description = {
 }
 
 dependencies = {
-    "lua >= 5.1",
     "luarocks-build-rust-mlua",
+    "lua",
 }
 
 build = {
     type = "rust-mlua",
+    install = {
+        lua = {
+            transformers_ao = "build/mymodule.lua"
+        }
+    },
     modules = {
         "transformers_ao"
     },
