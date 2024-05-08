@@ -16,6 +16,6 @@ clean:
 
 .PHONY: build
 build: clean
-	cargo build --release;
+	cargo build --release --features lua53;
 	cp ./target/release/libtransformers_ao.so ./output/libtransformers_ao.so;
 	cd output && lua mymodule.lua;

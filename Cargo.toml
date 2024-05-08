@@ -1,5 +1,5 @@
 [package]
-name = "transformers-ao"
+name = "transformers_ao"
 version = "0.1.0"
 edition = "2021"
 description = "transformers_ao."

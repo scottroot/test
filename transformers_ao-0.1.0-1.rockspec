@@ -1,4 +1,4 @@
-package = "transformers-ao"
+package = "transformers_ao"
 version = "0.1.0-1"
 
 source = {
@@ -26,6 +26,8 @@ build = {
     --     }
     -- },
     modules = {
-        "transformers_ao"
+        -- "transformers_ao"
+        ["transformers_ao"] = "libtransformers_ao",
     },
+    features = {"lua53"}
 }
