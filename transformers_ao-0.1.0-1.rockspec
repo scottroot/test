@@ -2,7 +2,7 @@ package = "transformers_ao"
 version = "0.1.0-1"
 
 source = {
-    url = "https://github.com/scottroot/test.git"
+    url = "git+https://github.com/scottroot/test"
 }
 
 description = {
