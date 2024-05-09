@@ -1,0 +1,243 @@
+#!/usr/bin/env python3
+# from https://github.com/ysugimoto/webassembly-lua
+
+import os
+import glob
+import re
+import shutil
+import subprocess
+from shlex import quote
+
+import sys
+sys.path.append('/usr/local/emcc-lua')
+from emcc_lua_lib.definition import Definition  # noqa: E402
+from emcc_lua_lib.file import (
+    LuaFile,
+    ModuleFile,
+    BundleFile
+)  # noqa: E402
+from emcc_lua_lib.helper import (
+    encode_hex_literals,
+    is_lua_source_file,
+    is_binary_library,
+    shell_exec,
+    debug_print,
+)  # noqa: E402
+
+
+CC = os.environ.get("CC", "cc")
+NM = os.environ.get("NM", "nm")
+LUA_VERSION = os.environ.get("LUA_VERSION", "5.3.4")
+LUAROCKS_LOCAL_MODULE_DIR = "/src/modules"
+LUAROCKS_LOCAL_MODULE_PREFIX_RE = re.compile(
+    re.escape(LUAROCKS_LOCAL_MODULE_DIR) + r"/share/lua/\d+\.\d+/"
+)
+CUSTOM_LUA_MODULES = os.getenv("CUSTOM_LUA_MODULES", "/src/lua-to-aos-compiler/custom-lua-modules")  # noqa: E501
+
+
+def __get_uname():
+    try:
+        uname, _ = shell_exec("uname", "-s")
+    except subprocess.CalledProcessError:
+        uname = "Unknown"
+    return uname
+
+
+def __get_output(output, entry_file):
+    out_file = output.get("file", os.path.basename(entry_file))
+    root, ext = os.path.splitext(out_file)
+    if not ext:
+        ext = ".html"
+    return root + ext
+
+
+def main():
+    """
+    Script to compile Lua and files with EMCC to wasm.
+    (Working directory is repository root)
+
+    Local files in lua-to-aos-compiler/src and location in Docker environment:
+    emcc-lua        ->  /usr/local/bin/emcc-lua (this file)
+    emcc_lua_lib    ->  /usr/local/emcc-lua/emcc_lua_lib
+    pre.js          ->  /opt/pre.js
+    definition.yml  ->  /opt/definition.yml
+    loader.lua      ->  /opt/loader.lua
+    json.lua        ->  /opt/src/json.lua
+    ao.lua          ->  /opt/src/ao.lua
+    pack.lua        ->  /opt/pack.lua
+    main.c          ->  /opt/main.c
+    main.lua        ->  /opt/main.lua
+    """
+    uname = __get_uname()
+
+    lua_files = []
+    library_files = []
+    link_libraries = []
+    dependency_libraries = []
+
+    # definition = Definition(os.path.join(os.getcwd(), "definition.yml"))
+    definition = Definition("/opt/definition.yml")
+    entry_file = definition.get_entry_file()
+
+    if not is_lua_source_file(entry_file):
+        print("main file of {} must be lua script.".format(entry_file))
+        return
+
+    definition.install_dependencies(LUAROCKS_LOCAL_MODULE_DIR)
+
+    local_include_dir = os.path.join(os.path.dirname(entry_file), "src")
+    local_include_prefix_re = re.compile(re.escape(local_include_dir + "/"))
+
+    # Detect bundles
+    bundle_files = glob.glob("/src/**/*.lua", recursive=True)
+
+    # Optional dependencies
+    # Get list of all *.lua and *.so files from the local paths
+    search_for_dependencies_paths = [
+        (local_include_dir, "/**/*.lua"),
+        (local_include_dir, "/**/*.so"),
+        (LUAROCKS_LOCAL_MODULE_DIR, "/lib/lua/**/*.so"),
+        (LUAROCKS_LOCAL_MODULE_DIR, "/share/lua/**/*.lua"),
+        (CUSTOM_LUA_MODULES, "/*.lua"),
+        (CUSTOM_LUA_MODULES, "/*.so"),
+    ]
+    for d, e in search_for_dependencies_paths:
+        bundle_files += glob.glob(d + e, recursive=True)
+
+    debug_print("Start to factory and distinguish module files")
+
+    for bundle in bundle_files:
+        if is_lua_source_file(bundle):
+            basename = re.sub(LUAROCKS_LOCAL_MODULE_PREFIX_RE, "", bundle)
+            basename = re.sub(local_include_prefix_re, "", basename)
+            lua_files.append(LuaFile(bundle, basename))
+
+        elif is_binary_library(bundle):
+            try:
+                nm, _ = shell_exec(NM, bundle)
+                is_module = False
+
+                if re.search(r"T _?luaL_newstate", nm):
+                    if re.search(r"U _?dlopen", nm):
+                        if uname in ["Linux", "SunOS", "Darwin"]:
+                            libdl_option = "-ldl"
+                else:
+                    for luaopen in re.finditer(r"[^dD] _?luaopen_([0-9a-zA-Z!\"#\$%&\'\(\)\*\+,\-\.\/:;\<=\>\?@\[\]^_`\{\|\}~]+)", nm):  # noqa: E501
+                        debug_print(f"luaopen_{luaopen.group(1)} function found. add to library in {bundle}")  # noqa: E501
+                        library_files.append(ModuleFile(bundle, luaopen.group(1)))  # noqa: E501
+                        is_module = True
+
+                if is_module:
+                    link_libraries.append(BundleFile(bundle))
+                else:
+                    dependency_libraries.append(BundleFile(bundle))
+
+            except subprocess.CalledProcessError:
+                print(NM, "command failed")
+                return
+
+    debug_print("===== Bundle Lua files ======")
+    debug_print(*[v.filepath for v in lua_files], sep="\n")
+    debug_print("===== Library files =====")
+    debug_print(*[v.filepath for v in library_files], sep="\n")
+    debug_print("===== Link libraries =====")
+    debug_print(*[v.filepath for v in link_libraries], sep="\n")
+    debug_print("===== Dependency libraries =====")
+    debug_print(*[v.filepath for v in dependency_libraries], sep="\n")
+
+    # Generate compile target file
+    debug_print("Start to generate compile.c")
+
+    with open("/opt/main.lua", mode="r") as lua:
+        lua_program = lua.read()
+
+        with open("/opt/main.c", mode="r") as c:
+            c_program = c.read()
+            c_program = c_program.replace(
+                "__LUA_BASE__",
+                encode_hex_literals(lua_program)
+            )
+            with open(entry_file, mode="r") as main_file:
+                p = main_file.read()
+                c_program = c_program.replace(
+                    "__LUA_MAIN__",
+                    encode_hex_literals(p)
+                )
+
+            inject_lua_files = []
+            for i, f in enumerate(lua_files):
+                with open(f.filepath, mode="r") as rf:
+                    lines = rf.readlines()
+                    # Check first line has control command
+                    if lines[0].find("\xef\xbb\xbf") != -1:
+                        # UTF-8 byte order mark
+                        lines[0] = lines[0][4:]
+                    elif lines[0][0] == "#":
+                        # shebang
+                        lines = lines[1:]
+
+                    hex_literal_lines = encode_hex_literals("\n".join(lines))
+                    inject_lua_files.extend([
+                        f"  static const unsigned char lua_require_{i}[] = {{{hex_literal_lines}}};",  # noqa: E501
+                        f"  lua_pushlstring(L, (const char*)lua_require_{i}, sizeof(lua_require_{i}));",  # noqa: E501
+                        f"  lua_setfield(L, -2, \"{f.module_name}\");\n"
+                    ])
+
+            for f in library_files:
+                inject_lua_files.extend([
+                    f"  int luaopen_{f.module_name}(lua_State* L);",
+                    f"  lua_pushcfunction(L, luaopen_{f.module_name});",
+                    f"  lua_setfield(L, -2, \"{f.basename}\");"
+                ])
+
+            c_program = c_program.replace(
+                "__LUA_FUNCTION_DECLARATIONS__",
+                definition.make_function_delarations()
+            )
+            c_program = c_program.replace(
+                "__INJECT_LUA_FILES__",
+                "\n".join(inject_lua_files)
+            )
+
+            with open("/tmp/compile.c", mode="w") as build:
+                build.write(c_program)
+
+    # Finally, compile to wasm
+    debug_print("Start to compile as WASM")
+    cmd = ['emcc', '-O0']
+    cmd.extend([
+        "-s", "STACK_SIZE=20971520",
+        "-s", "ALLOW_MEMORY_GROWTH=1",
+        "-s", "INITIAL_MEMORY=31457280",
+        "-s", "MAXIMUM_MEMORY=4294967296",
+        "-s", "WASM=1",
+        "-s", "MODULARIZE",
+        "-s", "DETERMINISTIC=1",
+        "-s", "NODERAWFS=0"
+    ])
+    cmd.extend(definition.get_extra_args())
+    cmd.extend(["-I", quote(f"/lua-{LUA_VERSION}/src")])
+    cmd.extend(["/tmp/compile.c", quote(f"/lua-{LUA_VERSION}/src/liblua.a")])
+    cmd.extend([quote(v.filepath) for v in link_libraries])
+
+    cmd.extend([
+        "-lm", "-ldl",
+        "-o", definition.get_output_file(),
+        "-s", 'EXPORTED_RUNTIME_METHODS=["cwrap"]'
+    ])
+
+    debug_print(f"Compile command is {' '.join(cmd)}")
+    shell_exec(*cmd)
+
+    # add metering library
+    meter_cmd = ["node", "/opt/node/apply-metering.cjs"]
+    shell_exec(*meter_cmd)
+    shell_exec(*["rm", "/src/process.js"])
+
+
+if __name__ == "__main__":
+    main()
+
+    # cleanup temporary module directory
+    if os.path.isdir(LUAROCKS_LOCAL_MODULE_DIR):
+        shutil.rmtree(LUAROCKS_LOCAL_MODULE_DIR)

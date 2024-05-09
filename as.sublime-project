@@ -1,0 +1,49 @@
+{
+    "build_systems":
+    [
+        {
+            "file_regex": "^[ ]*File \"(...*?)\", line ([0-9]*)",
+            "name": "Miniconda myenv Python Builder",
+            "selector": "source.python",
+            "shell_cmd": "\"/Users/lcn/miniconda3/envs/myenv/bin/python\" -u \"$file\"",
+        },
+        {
+			"file_regex": "^[ ]*File \"(...*?)\", line ([0-9]*)",
+			"name": "Anaconda Python Builder",
+			"selector": "source.python",
+			"shell_cmd": "\"python\" -u \"$file\""
+		},
+    ],
+    "folders":
+    [
+        {
+            "follow_symlinks": true,
+            "path": ".",
+        }
+    ],
+    "settings":
+    {
+        "LSP":
+        {
+			"LSP-typescript":
+			{
+				"enabled": true,
+			},
+		
+            "LSP-tailwindcss":
+            {
+				"enabled": true,
+			},
+            "LSP-eslint":
+            {
+				"enabled": true,
+			},
+            "LSP-pyright": {
+                "settings": {
+                   "python.pythonPath": "/Users/lcn/miniconda3/envs/myenv/bin/python",
+                },
+             },
+        },
+    },
+    "conda_environment": "/Users/lcn/miniconda3/envs/myenv",
+}

@@ -1,6 +1,6 @@
 #![allow(unused)]
 extern crate core;
-use base64::prelude::*;
+// use base64::prelude::*;
 
 // use base64::decode;
 // use std::str::FromStr;
@@ -8,21 +8,26 @@ use base64::prelude::*;
 use candle_core::{Device, Tensor};
 use candle_nn::VarBuilder;
 use candle_transformers::models::bert::{BertModel, Config, DTYPE};
-use hf_hub::{Repo, RepoType};
-use hf_hub::api::sync::Api;
+// use hf_hub::{Repo, RepoType};
+// use hf_hub::api::sync::Api;
 use mlua::prelude::*;
-use mlua::{String, Result as LuaResult, UserData};
+use mlua::{
+    String, Result as LuaResult,
+    UserData,
+    Table as LuaTable,
+    Function as LuaFunction
+};
 // use mlua::Error::RuntimeError as LuaRuntimeError;
 // use serde::{Deserialize, Serialize};
-use serde_json::{
-    from_str,
-    // to_string_pretty
-};
+// use serde_json::{
+//     from_str,
+//     // to_string_pretty
+// };
 use tokenizers;
 use tokenizers::{EncodeInput, InputSequence, PaddingParams, Tokenizer};
 
 
-fn encode_text(_: &Lua, (config, tokenizer, model): (LuaString, LuaString, LuaString)) -> LuaResult<Vec<f32>> {
+pub fn encode_text<'lua>(_: &'lua Lua, (config, tokenizer, model): (LuaString, LuaString, LuaString)) -> LuaResult<Vec<f32>> {
     let prompt = "Hello, world!";
     let normalize_embeddings = true;
 
@@ -35,7 +40,7 @@ fn encode_text(_: &Lua, (config, tokenizer, model): (LuaString, LuaString, LuaSt
     let model_id = "sentence-transformers/all-MiniLM-L6-v2".to_string();
     let revision = "refs/pr/21".to_string();
 
-    let mut config: Config = from_str::<Config>(config.to_str()?)
+    let mut config: Config = serde_json::from_str::<Config>(config.to_str()?)
         .map_err(|err|LuaError::external(err))?;
 
     let mut tokenizer = Tokenizer::from_bytes(tokenizer.as_bytes())
@@ -119,9 +124,21 @@ pub fn normalize_l2(v: &Tensor) -> LuaResult<Tensor> {
         ).map_err(|err|LuaError::external(err))?
     )
 }
+
+fn make_exports<'lua>(
+    lua: &'lua Lua,
+    encode_text: LuaFunction<'lua>,
+) -> LuaResult<LuaTable<'lua>> {
+    let exports = lua.create_table()?;
+    exports.set("encode_text", encode_text.clone())?;
+    exports.set("null", lua.null())?;
+    Ok(exports)
+}
+
 #[mlua::lua_module]
 fn transformers_ao(lua: &Lua) -> LuaResult<LuaTable> {
     let exports = lua.create_table()?;
-    exports.set("encode_text", lua.create_function(encode_text)?)?;
-    Ok(exports)
+    // exports.set("encode_text", lua.create_function(encode_text)?)?;
+    let encode_text = lua.create_function(encode_text)?;
+    make_exports(lua, encode_text)
 }

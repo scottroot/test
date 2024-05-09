@@ -26,8 +26,7 @@ build = {
     --     }
     -- },
     modules = {
-        -- "transformers_ao"
-        ["transformers_ao"] = "libtransformers_ao",
+        "transformers_ao"
     },
     features = {"lua53"}
 }

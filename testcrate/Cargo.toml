@@ -1,0 +1,11 @@
+[package]
+name = "transformers_ao_tests"
+version = "0.0.0"
+authors = ["scott.ar"]
+edition = "2021"
+
+#[features]
+#lua53 = ["mlua/lua53"]
+
+[dependencies]
+mlua = { version = "0.9.1", features = ["vendored", "lua53"] }
