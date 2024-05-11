@@ -9,6 +9,7 @@ WORKDIR /src
 
 RUN apt-get update -qq -y
 RUN apt-get install -y build-essential clang pkg-config libssl-dev libreadline-dev
+# apt install lsb-release wget software-properties-common gnupg
 RUN apt-get update -qq -y
 
 # Install lua runtime
@@ -30,8 +31,8 @@ RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
 RUN rustup toolchain add stable
 RUN rustup target add wasm32-unknown-emscripten --toolchain stable
-#RUN rustup target add wasm32-unknown-unknown --toolchain stable
-#RUN cargo install wasm-bindgen-cli
+RUN rustup target add wasm32-unknown-unknown --toolchain stable
+RUN cargo install wasm-bindgen-cli
 
 
 ENTRYPOINT ["sleep", "infinity"]

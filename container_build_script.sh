@@ -19,4 +19,5 @@ cp -rf /src/lua-to-aos-compiler/src/json.lua /opt/src/json.lua;
 cp -rf /src/lua-to-aos-compiler/src/ao.lua /opt/src/ao.lua;
 cp -rf /src/lua-to-aos-compiler/src/main.c /opt/main.c;
 cp -rf /src/lua-to-aos-compiler/src/main.lua /opt/main.lua;
+cp -rf /src/lua-to-aos-compiler/ /opt/
 emcc-lua

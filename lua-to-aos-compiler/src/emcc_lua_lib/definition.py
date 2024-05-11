@@ -39,27 +39,32 @@ class Definition():
 
         if self.pre_js:
             if not os.path.isfile(self.pre_js):
-                print('pre_js: {} does not exist. need to place it'.format(self.pre_js))
+                print(
+                    f"pre_js: {self.pre_js} does not exist. need to place it"
+                )
                 sys.exit(1)
 
             args.extend(['--pre-js', self.pre_js])
 
         return args
 
-
     def get_output_file(self):
         if self.output_file:
             return self.output_file
-
-        return '{}.html'.format(os.path.splitext(os.path.basename(self.entry_file))[0])
-
+        filename = os.path.splitext(os.path.basename(self.entry_file))[0]
+        return f"{filename}.html"
 
     def install_dependencies(self, local_module_dir):
         for mod in self.dependencies:
             print('Install module {} via luarocks...'.format(mod))
             # install locally
-            shell_exec('luarocks', '--tree={}'.format(local_module_dir), '--deps-mode=one', 'install', mod)
-
+            shell_exec(
+                "luarocks",
+                f"--tree={local_module_dir}",
+                "--deps-mode=one",
+                "install",
+                mod
+            )
 
     def make_function_delarations(self):
         template = '''

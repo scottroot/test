@@ -9,3 +9,15 @@ rustflags = [
   "-C", "link-arg=-undefined",
   "-C", "link-arg=dynamic_lookup",
 ]
+[target.wasm32-unknown-unknown]
+rustflags = [
+#  "-C", "target-feature=+atomics,+bulk-memory",
+  "-C", "relocation-model=pic",
+]
+
+[target.wasm32-unknown-emscripten]
+rustflags = [
+#  "-C", "target-feature=+atomics,+bulk-memory",
+  "-C", "relocation-model=pic",
+#  "-C", "link-args=-rdynamic",
+]

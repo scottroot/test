@@ -7,14 +7,16 @@ keywords = ["ao", "tensor", "machine-learning"]
 categories = ["science"]
 license = "MIT"
 
-#[features]
-#lua53 = ["mlua/lua53"]
+[features]
+lua53 = ["mlua/lua53"]
 
 [lib]
 name = "transformers_ao"
 crate-type = ["cdylib"]
 
 [dependencies]
+mlua = { version = "0.9.7", features = ["lua53", "module", "serialize"]}
+
 candle-core = { git = "https://github.com/huggingface/candle.git", version = "0.5.0" }
 #candle-examples = { git = "https://github.com/huggingface/candle.git", version = "0.5.0" }
 candle-nn = { git = "https://github.com/huggingface/candle.git", version = "0.5.0" }
@@ -43,22 +45,18 @@ safetensors = "0.4.1"
 
 # Wasm specific crates.
 #console_error_panic_hook = "0.1.7"
-#getrandom = { version = "0.2", features = ["js"] }
-#gloo = "0.11"
-#js-sys = "0.3.64"
-#log = "0.4"
-#wasm-bindgen = "0.2.87"
-#serde-wasm-bindgen = "0.6.0"
+getrandom = { version = "0.2", features = ["js"] }
+gloo = "0.11"
+js-sys = "0.3.64"
+log = "0.4"
+wasm-bindgen = "0.2.87"
+serde-wasm-bindgen = "0.6.0"
 #clap = { version = "4.5.4", features = ["derive"] }
 
-[dependencies.mlua]
-version = "0.9.7"
-default-features = false
-features = [
-    "lua53",
-    "module",
-    "serialize"
-]
+#[dependencies.mlua]
+#version = "0.9.7"
+##default-features = false
+#features = ["lua53", "module", "serialize"]
 
 [dependencies.onig]
 version = "6.1.0"

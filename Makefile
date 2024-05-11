@@ -25,5 +25,9 @@ build: clean
 	cp ./target/release/libtransformers_ao.so ./output/libtransformers_ao.so;
 	cd output && lua mymodule.lua && cd ../;
 
+wasm-emscripten:
+	LUA_LIB=/src/lua-5.3.4/src LUA_LIB_NAME=lua LUA_LINK=static cargo build --release --target wasm32-unknown-emscripten -vv;
+
 wasm:
-	cargo build --release --features lua53 --target wasm32-unknown-emscripten;
+	cargo build --release --target wasm32-unknown-unknown;
+

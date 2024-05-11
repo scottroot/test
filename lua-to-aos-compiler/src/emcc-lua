@@ -32,7 +32,7 @@ LUAROCKS_LOCAL_MODULE_DIR = "/src/modules"
 LUAROCKS_LOCAL_MODULE_PREFIX_RE = re.compile(
     re.escape(LUAROCKS_LOCAL_MODULE_DIR) + r"/share/lua/\d+\.\d+/"
 )
-CUSTOM_LUA_MODULES = os.getenv("CUSTOM_LUA_MODULES", "/src/lua-to-aos-compiler/custom-lua-modules")  # noqa: E501
+# CUSTOM_LUA_MODULES = os.getenv("CUSTOM_LUA_MODULES", "/src/lua-to-aos-compiler/custom-lua-modules")  # noqa: E501
 
 
 def __get_uname():
@@ -57,16 +57,16 @@ def main():
     (Working directory is repository root)
 
     Local files in lua-to-aos-compiler/src and location in Docker environment:
-    emcc-lua        ->  /usr/local/bin/emcc-lua (this file)
     emcc_lua_lib    ->  /usr/local/emcc-lua/emcc_lua_lib
+    emcc-lua        ->  /usr/local/bin/emcc-lua (this file)
     pre.js          ->  /opt/pre.js
     definition.yml  ->  /opt/definition.yml
     loader.lua      ->  /opt/loader.lua
-    json.lua        ->  /opt/src/json.lua
-    ao.lua          ->  /opt/src/ao.lua
     pack.lua        ->  /opt/pack.lua
     main.c          ->  /opt/main.c
     main.lua        ->  /opt/main.lua
+    json.lua        ->  /opt/src/json.lua
+    ao.lua          ->  /opt/src/ao.lua
     """
     uname = __get_uname()
 
@@ -98,8 +98,8 @@ def main():
         (local_include_dir, "/**/*.so"),
         (LUAROCKS_LOCAL_MODULE_DIR, "/lib/lua/**/*.so"),
         (LUAROCKS_LOCAL_MODULE_DIR, "/share/lua/**/*.lua"),
-        (CUSTOM_LUA_MODULES, "/*.lua"),
-        (CUSTOM_LUA_MODULES, "/*.so"),
+        # (CUSTOM_LUA_MODULES, "/*.lua"),
+        # (CUSTOM_LUA_MODULES, "/*.so"),
     ]
     for d, e in search_for_dependencies_paths:
         bundle_files += glob.glob(d + e, recursive=True)
@@ -199,7 +199,7 @@ def main():
                 "\n".join(inject_lua_files)
             )
 
-            with open("/tmp/compile.c", mode="w") as build:
+            with open("/opt/compile.c", mode="w") as build:
                 build.write(c_program)
 
     # Finally, compile to wasm
@@ -213,11 +213,12 @@ def main():
         "-s", "WASM=1",
         "-s", "MODULARIZE",
         "-s", "DETERMINISTIC=1",
-        "-s", "NODERAWFS=0"
+        "-s", "NODERAWFS=0",
+        # "-fPIC"
     ])
     cmd.extend(definition.get_extra_args())
     cmd.extend(["-I", quote(f"/lua-{LUA_VERSION}/src")])
-    cmd.extend(["/tmp/compile.c", quote(f"/lua-{LUA_VERSION}/src/liblua.a")])
+    cmd.extend(["/opt/compile.c", quote(f"/lua-{LUA_VERSION}/src/liblua.a")])
     cmd.extend([quote(v.filepath) for v in link_libraries])
 
     cmd.extend([
@@ -226,13 +227,16 @@ def main():
         "-s", 'EXPORTED_RUNTIME_METHODS=["cwrap"]'
     ])
 
+    print(" ".join(cmd))
+    return
+
     debug_print(f"Compile command is {' '.join(cmd)}")
     shell_exec(*cmd)
 
-    # add metering library
-    meter_cmd = ["node", "/opt/node/apply-metering.cjs"]
-    shell_exec(*meter_cmd)
-    shell_exec(*["rm", "/src/process.js"])
+    # # add metering library
+    # meter_cmd = ["node", "/opt/node/apply-metering.cjs"]
+    # shell_exec(*meter_cmd)
+    # shell_exec(*["rm", "/src/process.js"])
 
 
 if __name__ == "__main__":

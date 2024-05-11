@@ -27,10 +27,10 @@ use tokenizers;
 use tokenizers::{EncodeInput, InputSequence, PaddingParams, Tokenizer};
 
 
-pub fn encode_text<'lua>(_: &'lua Lua, (config, tokenizer, model): (LuaString, LuaString, LuaString)) -> LuaResult<Vec<f32>> {
+// pub fn encode_text<'lua>(_: &'lua Lua, (config, tokenizer, model): (LuaString, LuaString, LuaString)) -> LuaResult<Vec<f32>> {
+pub fn encode_text(_: &Lua, (config, tokenizer, model): (LuaString, LuaString, LuaString)) -> LuaResult<Vec<f32>> {
     let prompt = "Hello, world!";
     let normalize_embeddings = true;
-
 
     let sentences = [prompt];
     let n_sentences = sentences.len();
@@ -125,20 +125,34 @@ pub fn normalize_l2(v: &Tensor) -> LuaResult<Tensor> {
     )
 }
 
-fn make_exports<'lua>(
-    lua: &'lua Lua,
-    encode_text: LuaFunction<'lua>,
-) -> LuaResult<LuaTable<'lua>> {
-    let exports = lua.create_table()?;
-    exports.set("encode_text", encode_text.clone())?;
-    exports.set("null", lua.null())?;
-    Ok(exports)
-}
+// fn make_exports<'lua>(
+//     lua: &'lua Lua,
+//     encode_text: LuaFunction<'lua>,
+//     main: LuaFunction<'lua>,
+// ) -> LuaResult<LuaTable<'lua>> {
+//     let exports = lua.create_table()?;
+//     exports.set("encode_text", encode_text.clone())?;
+//     exports.set("main", main)?;
+//     exports.set("null", lua.null())?;
+//     Ok(exports)
+// }
 
+fn main(_: &Lua) -> LuaResult<()> {
+    println!("test main");
+    Ok(())
+}
 #[mlua::lua_module]
 fn transformers_ao(lua: &Lua) -> LuaResult<LuaTable> {
     let exports = lua.create_table()?;
-    // exports.set("encode_text", lua.create_function(encode_text)?)?;
-    let encode_text = lua.create_function(encode_text)?;
-    make_exports(lua, encode_text)
+    exports.set("encode_text", lua.create_function(encode_text)?)?;
+    // exports.set("main2", lua.create_function(main)?)?;
+    let main = lua.create_function(|lua: &Lua, _: LuaString| {
+        main(lua);
+        Ok(())
+    })?;
+    exports.set("main", main)?;
+    Ok(exports)
+    // let encode_text = lua.create_function(encode_text)?;
+    // let main = lua.create_function(main)?;
+    // make_exports(lua, encode_text, main)
 }
